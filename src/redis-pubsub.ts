@@ -97,17 +97,19 @@ export class RedisPubSub implements PubSubEngine {
       this.subsRefsMap[triggerName] = [...refs, id];
       return Promise.resolve(id);
     } else {
+      this.subsRefsMap[triggerName] = [
+        ...(this.subsRefsMap[triggerName] || []),
+        id,
+      ];
+
       return new Promise<number>((resolve, reject) => {
         const subscribeFn = options['pattern'] ? this.redisSubscriber.psubscribe : this.redisSubscriber.subscribe;
 
         subscribeFn.call(this.redisSubscriber, triggerName, err => {
           if (err) {
+            this.subsRefsMap[triggerName].pop();
             reject(err);
           } else {
-            this.subsRefsMap[triggerName] = [
-              ...(this.subsRefsMap[triggerName] || []),
-              id,
-            ];
             resolve(id);
           }
         });
